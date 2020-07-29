@@ -1,7 +1,7 @@
 <?php
 
 // Dump currency exchange rates from https://fixer.io into json format
-function dump_exchange_rates() {
+function dump_currency_rates() {
     /**
      * https://fixer.io/documentation
      * API key : 07158c4311bf7350065e78993c83bec5
@@ -74,11 +74,8 @@ function dump_exchange_rates() {
     // Decode JSON response:
     $exchangeRates = json_decode($json, true);
 
-    return $exchangeRates;
+    return $exchangeRates['rates'];
 }
-
-// Access the exchange rate values, e.g. GBP:
-// echo $exchangeRates['rates']['GBP'];
 
 /**
  * http://data.fixer.io/api/latest
@@ -100,6 +97,3 @@ function dump_exchange_rates() {
  *      }
  *  }
  */
-
-
-?>

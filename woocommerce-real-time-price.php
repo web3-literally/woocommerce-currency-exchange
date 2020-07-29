@@ -1,6 +1,7 @@
 <?php
 
-require_once 'connect_fixer_io.php';
+require_once 'global.php';
+require_once 'price_helper.php';
 
 /**
  * Woocommerce Real-Time prices
@@ -143,8 +144,22 @@ function woocommerce_product_custom_fields(){
         )
     );
 
-    //echo '</div>';
-
+    // Custom Product Number Field
+    woocommerce_wp_text_input(
+        array(
+            'id'                => '_global_weight_oz',
+            'label'             => __( 'Weight (oz)', 'woo-rtp' ),
+            'placeholder'       => '',
+            'desc_tip'          => 'true',
+            'description'       => __( 'Enter the weight for all metals(unit is g)', 'woo-rtp' ),
+            'data_type'         => 'price',
+            'type'              => 'number',
+            'custom_attributes' => array(
+                'step' 	=> '0.000001',
+                'min'	=> '0'
+            )
+        )
+    );
 }
 
 function woocommerce_product_custom_fields_save($post_id){
@@ -175,6 +190,12 @@ function woocommerce_product_custom_fields_save($post_id){
     $woocommerce_global_margin_percentage = $_POST['_global_margin_percentage'];
     if (!empty($woocommerce_global_margin_percentage)){
         update_post_meta($post_id, '_global_margin_percentage', esc_attr($woocommerce_global_margin_percentage));
+    }
+
+    // Custom Product Number Field
+    $woocommerce_global_weight_oz = $_POST['_global_weight_oz'];
+    if (!empty($woocommerce_global_weight_oz)){
+        update_post_meta($post_id, '_global_weight_oz', esc_attr($woocommerce_global_weight_oz));
     }
 }
 
@@ -252,6 +273,20 @@ function variation_settings_fields( $loop, $variation_data, $variation ) {
         )
     );
 
+    woocommerce_wp_text_input(
+        array(
+            'id'                => '_global_weight_oz[' . $variation->ID . ']',
+            'label'             => __( 'Weight (oz)', 'woo-rtp' ),
+            'desc_tip'    => 'true',
+            'description'       => __( 'Enter the weight for all metals(unit is g)', 'woo-rtp' ),
+            'value'       => get_post_meta( $variation->ID, '_global_weight_oz', true ),
+            'type'              => 'number',
+            'custom_attributes' => array(
+                'step' 	=> '0.000001',
+                'min'	=> '0'
+            )
+        )
+    );
 }
 
 /**
@@ -288,8 +323,12 @@ function save_variation_settings_fields( $post_id ) {
         update_post_meta($post_id, '_global_margin_percentage', esc_attr($woocommerce_global_margin_percentage));
     }
 
+    // Custom Product Number Field
+    $woocommerce_global_weight_oz = $_POST['_global_weight_oz'][ $post_id ];
+    if (!empty($woocommerce_global_weight_oz)){
+        update_post_meta($post_id, '_global_weight_oz', esc_attr($woocommerce_global_weight_oz));
+    }
 }
-
 
 /**
  * TO DO
@@ -301,12 +340,35 @@ add_action('product_cat_edit_form_fields', 'wh_taxonomy_edit_meta_field', 10, 1)
 
 //Product Cat Create page
 function wh_taxonomy_add_new_meta_field() {
+    $wh_meta_title = __('Meta Title', 'wh');
+    $wh_enter_meta_title = __('Enter a meta title, <= 60 character', 'wh');
+    $wh_ref = __('Reference (CUR)', 'wh');
+    $wh_enter_ref = __('Enter the reference you like to use for sync external DATA', 'wh');
+    $wh_margin = __('Margin Percentage (%)', 'wh');
+    $wh_enter_margin = __('Enter the custom % here you like to use', 'wh');
+    $wh_weight = __('Weight (oz)', 'wh');
+    $wh_enter_weight = __('Enter the weight for all metals(unit is g)', 'wh');
 
 $meta_field  = <<<EOT
     <div class="form-field">
-        <label for="wh_meta_title"><?php _e('Meta Title', 'wh'); ?></label>
+        <label for="wh_meta_title">$wh_meta_title</label>
         <input type="text" name="wh_meta_title" id="wh_meta_title">
-        <p class="description"><?php _e('Enter a meta title, <= 60 character', 'wh'); ?></p>
+        <p class="description">$wh_enter_meta_title</p>
+    </div>
+    <div class="form-field">
+        <label for="_global_REF">$wh_ref</label>
+        <input type="text" name="_global_REF" id="_global_REF">
+        <p class="description">$wh_enter_ref</p>
+    </div>
+    <div class="form-field">
+        <label for="_global_margin_percentage">$wh_margin</label>
+        <input type="text" name="_global_margin_percentage" id="_global_margin_percentage">
+        <p class="description">$wh_enter_margin</p>
+    </div>
+    <div class="form-field">
+        <label for="_global_weight_oz">$wh_weight</label>
+        <input type="text" name="_global_weight_oz" id="_global_weight_oz">
+        <p class="description">$wh_enter_weight</p>
     </div>
 EOT;
 
@@ -320,21 +382,53 @@ function wh_taxonomy_edit_meta_field($term) {
     $term_id = $term->term_id;
 
     // retrieve the existing value(s) for this meta field.
-    $wh_meta_title = get_term_meta($term_id, 'wh_meta_title', true);
+    $wh_meta_title_value = get_term_meta($term_id, 'wh_meta_title', true);
+    $wh_ref_value = get_term_meta($term_id, '_global_REF', true);
+    $wh_margin_value = get_term_meta($term_id, '_global_margin_percentage', true);
+    $wh_weight_value = get_term_meta($term_id, '_global_weight_oz', true);
+
+//    $wh_meta_title_clean = esc_attr($wh_meta_title) ? esc_attr($wh_meta_title) : '';
+    $wh_meta_title = __('Meta Title', 'wh');
+    $wh_meta_desc = __('Enter a meta title, <= 60 character', 'wh');
+    $wh_ref = __('Reference (CUR)', 'wh');
+    $wh_enter_ref = __('Enter the reference you like to use for sync external DATA', 'wh');
+    $wh_margin = __('Margin Percentage (%)', 'wh');
+    $wh_enter_margin = __('Enter the custom % here you like to use', 'wh');
+    $wh_weight = __('Weight (oz)', 'wh');
+    $wh_enter_weight = __('Enter the weight for all metals(unit is g)', 'wh');
 
 $form_field  = <<<EOT
-    ?>
     <tr class="form-field">
-        <th scope="row" valign="top"><label for="wh_meta_title"><?php _e('Meta Title', 'wh'); ?></label></th>
+        <th scope="row" valign="top"><label for="wh_meta_title">$wh_meta_title</label></th>
         <td>
-            <input type="text" name="wh_meta_title" id="wh_meta_title" value="<?php echo esc_attr($wh_meta_title) ? esc_attr($wh_meta_title) : ''; ?>">
-            <p class="description"><?php _e('Enter a meta title, <= 60 character', 'wh'); ?></p>
+            <input type="text" name="wh_meta_title" id="wh_meta_title" value="$wh_meta_title_value">
+            <p class="description">$wh_meta_desc</p>
+        </td>
+    </tr>
+    <tr class="form-field">
+        <th scope="row" valign="top"><label for="_global_REF">$wh_ref</label></th>
+        <td>
+            <input type="text" name="_global_REF" id="_global_REF" value="$wh_ref_value">
+            <p class="description">$wh_enter_ref</p>
+        </td>
+    </tr>
+    <tr class="form-field">
+        <th scope="row" valign="top"><label for="_global_margin_percentage">$wh_margin</label></th>
+        <td>
+            <input type="text" name="_global_margin_percentage" id="_global_margin_percentage" value="$wh_margin_value">
+            <p class="description">$wh_enter_margin</p>
+        </td>
+    </tr>
+    <tr class="form-field">
+        <th scope="row" valign="top"><label for="_global_weight_oz">$wh_weight</label></th>
+        <td>
+            <input type="text" name="_global_weight_oz" id="_global_weight_oz" value="$wh_weight_value">
+            <p class="description">$wh_enter_weight</p>
         </td>
     </tr>
 EOT;
-
+    // echo esc_attr($wh_meta_title) ? esc_attr($wh_meta_title) : '';
     echo $form_field;
-
 }
 
 add_action('edited_product_cat', 'wh_save_taxonomy_custom_meta', 10, 1);
@@ -344,8 +438,14 @@ add_action('create_product_cat', 'wh_save_taxonomy_custom_meta', 10, 1);
 function wh_save_taxonomy_custom_meta($term_id) {
 
     $wh_meta_title = filter_input(INPUT_POST, 'wh_meta_title');
+    $wh_ref = filter_input(INPUT_POST, '_global_REF');
+    $wh_margin = filter_input(INPUT_POST, '_global_margin_percentage');
+    $wh_weight = filter_input(INPUT_POST, '_global_weight_oz');
 
     update_term_meta($term_id, 'wh_meta_title', $wh_meta_title);
+    update_term_meta($term_id, '_global_REF', $wh_ref);
+    update_term_meta($term_id, '_global_margin_percentage', $wh_margin);
+    update_term_meta($term_id, '_global_weight_oz', $wh_weight);
 }
 
 //Displaying Additional Columns
@@ -396,16 +496,15 @@ function right_now(){
 add_action('rest_api_init', function () {
     register_rest_route( 'api/v1', '/cron-update-price', array(
         'methods' => 'GET',
-        'callback' => 'handle_api_func',
+        'callback' => 'handle_cron_func',
     ));
 });
 
-// Api endpoint handle function
-function handle_api_func($data) {
-    // Get currency exchange rates from fixer.io
-    $exchangeRates = dump_exchange_rates();
-    var_dump('----------------------exchange rates------------------------');
-    var_dump(json_encode($exchangeRates));
+// Api endpoint for cron job
+function handle_cron_func($data) {
+
+    $price_helper = new PriceHelper();
+    $price_helper->init();
 
     // Get categories
     $product_categories = get_terms(array(
@@ -420,111 +519,107 @@ function handle_api_func($data) {
     ));
 
     $categories_count = count($product_categories);
-    if ($categories_count > 0) {
-        foreach ($product_categories as $product_category) {
-            var_dump('----------------------category begin------------------------');
-            var_dump(json_encode($product_category));
+
+    var_dump('categories count '.$categories_count);
+
+    foreach ($product_categories as $product_category) {
+
+        $category_id = $product_category->term_id;
+        $category_slug = $product_category->slug;
+        $category_margin = get_term_meta($category_id, '_global_margin_percentage', true);
+        $category_symbol = get_term_meta($category_id, '_global_REF', true);
+
+        list($post_type, $new_purchasing_price) = $price_helper->check_symbol($category_symbol, '', 0);
+//        var_dump('category id '.$category_id.' margin '.$category_margin.' symbol '.$category_symbol);
+
+        // Get products in this category(search with <slug> field)
+        $args = array(
+            'posts_per_page' => -1,
+            'tax_query' => array(
+                'relation' => 'AND',
+                array(
+                    'taxonomy' => 'product_cat',
+                    'field' => 'slug',
+                    'terms' => $category_slug
+                )
+            ),
+            'post_type' => 'product',
+            'orderby' => 'title,'
+        );
+        $products = new WP_Query( $args );
+
+        // Check searched products
+        while ($products->have_posts()) {
+            $products->the_post();
+            $product_id = get_the_ID();
+            $product = new WC_Product( $product_id );
+
+            $product_margin = get_post_meta($product_id, '_global_margin_percentage', true);
+            // Get new purchasing price from the product symbol
+            $product_symbol = get_post_meta($product_id, '_global_REF', true);
+            list($post_type, $new_purchasing_price) = $price_helper->check_symbol($product_symbol, $post_type, $new_purchasing_price);
+//            var_dump('product margin '.$product_margin.' symbol '.$product_symbol);
+
+            // Get product variations
             $args = array(
-                'posts_per_page' => -1,
-                'tax_query' => array(
-                    'relation' => 'AND',
-                    array(
-                        'taxonomy' => 'product_cat',
-                        'field' => 'slug',
-                        'terms' => $product_category->slug
-                    )
-                ),
-                'post_type' => 'product',
-                'orderby' => 'title,'
+                'post_type'     => 'product_variation',
+                'numberposts'   => -1,
+                'orderby'       => 'menu_order',
+                'order'         => 'asc',
+                'post_parent'   => $product_id
             );
+            $variations = get_posts( $args );
 
-            // Get products in the category
-            $products = new WP_Query( $args );
-            var_dump('------------products begin----------');
-            while ($products->have_posts()) {
-                $products->the_post();
-                $product_id = get_the_ID();
-                $product = new WC_Product( $product_id );
-
-                $pmargin_percent =  floatval(get_post_meta($product_id, '_global_margin_percentage', true));
-
-                var_dump(json_encode(array(
-                    'id' => $product_id,
-                    'name' => $product->get_name(),
-                    'slug' => $product->get_slug(),
-                    'price' => $product->get_price(),
-                    'regular_price' => $product->get_regular_price(),
-                    'sale_price' => $product->get_sale_price(),
-                    'margin_perent' => $pmargin_percent,
-                    'SKU' => $product->get_sku(),
-                    'status' => $product->get_status(),
-                    'attributes' => $product->get_attributes(),
-                    'type' => $product->get_type(),
-                    'new purchasing price' => array_key_exists($product->get_sku(), $exchangeRates['rates'])
-                                                ? $exchangeRates['rates'][$product->get_sku()]
-                                                : '',
-                )));
-
-                // Get product variations
-                $args = array(
-                    'post_type'     => 'product_variation',
-//                    'post_status'   => array( 'private', 'publish' ),
-                    'numberposts'   => -1,
-                    'orderby'       => 'menu_order',
-                    'order'         => 'asc',
-                    'post_parent'   => $product_id // get parent post-ID
-                );
-                $variations = get_posts( $args );
-
-                if (count($variations) == 0) {
-                    continue;
+            // Update product price
+            $current_selling_price = floatval($product->get_regular_price());
+            $ratio = $price_helper->get_ratio($category_margin, $product_margin, 0);
+            if ($ratio > 0) {       // This means there is margin value exist
+                $new_selling_price = $new_purchasing_price * $ratio;
+                if ($post_type == METAL) {
+                    $metal_weight = floatval(get_post_meta($product_id, '_global_weight_oz', true)) / 1000;     // convert g to kg
+                    $new_selling_price *= $metal_weight;
+                    var_dump('metal product weight '.$metal_weight.' new selling price '.$new_selling_price);
                 }
-                var_dump('-------variants begin-------');
+                if ($new_selling_price != $current_selling_price) {     // Update only when the price is different
+                    $product->set_regular_price(strval($new_selling_price));
+                    $product->save();
+                    var_dump('update selling price of product id '.$product_id.' to '.strval($new_selling_price));
+                }
+            }
+
+            if (count($variations) > 0) {
+                // There exist variations, then update the price of the variations
                 foreach ( $variations as $variation ) {
-                    // get variation ID
                     $variation_id = $variation->ID;
-                    // get variations meta
                     $product_variation = new WC_Product_Variation( $variation_id );
-//                    var_dump($product_variation);
-                    $vmargin_percent = floatval(get_post_meta($variation_id, '_global_margin_percentage', true));
-                    $new_purchasing_price =
-                        floatval(array_key_exists($product->get_sku(), $exchangeRates['rates'])
-                                        ? $exchangeRates['rates'][$product->get_sku()]
-                                        : '');
+
+                    $variant_margin = get_post_meta($variation_id, '_global_margin_percentage', true);
+                    // Get new purchasing price from the variant symbol
+                    // If variant symbol does not exist in the currency symbols, use product symbol
+                    $variant_symbol = get_post_meta($variation_id, '_global_REF', true);
+                    list($post_type, $new_purchasing_price) = $price_helper->check_symbol($variant_symbol, $post_type, $new_purchasing_price);
+                    var_dump('variant margin '.$variant_margin.' symbol '.$variant_symbol);
+
                     $current_selling_price = floatval($product_variation->get_regular_price());
-
-                    var_dump(json_encode(array(
-                        'variant id' => $variation_id,
-                        'name' => $product_variation->get_name(),
-                        'slug' => $product_variation->get_slug(),
-//                        'price' => $product_variation->get_price(),
-                        'price' => $current_selling_price,
-//                        'sale_price' => $current_selling_price,
-                        'margin_perent' => $vmargin_percent,
-                        'SKU' => $product_variation->get_sku(),
-                        'status' => $product_variation->get_status(),
-                        'attributes' => $product_variation->get_attributes(),
-                        'type' => $product_variation->get_type(),
-                        'new purchasing price' => $new_purchasing_price,
-                    )));
-
-                    if ($vmargin_percent > 0) {
-                        $new_selling_price = $new_purchasing_price * (1 + $vmargin_percent / 100);
-                        var_dump('current selling price '.$current_selling_price.', new selling price '.$new_selling_price);
-                        if ($new_selling_price != $current_selling_price) {
-                            var_dump('updating selling price to '.strval($new_selling_price));
-                            $product_variation->set_regular_price($new_selling_price);
+                    $ratio = $price_helper->get_ratio($category_margin, $product_margin, $variant_margin);
+                    if ($ratio > 0) {       // This means there is margin value exist
+                        $new_selling_price = $new_purchasing_price * $ratio;
+                        if ($post_type == METAL) {
+                            $metal_weight = floatval(get_post_meta($variation_id, '_global_weight_oz', true)) / 1000;     // convert g to kg
+                            $new_selling_price *= $metal_weight;
+                            var_dump('metal variant weight '.$metal_weight.' new selling price '.$new_selling_price);
+                        }
+                        if ($new_selling_price != $current_selling_price) {     // Update only when the price is different
+                            $product_variation->set_regular_price(strval($new_selling_price));
                             $product_variation->save();
+                            var_dump('update selling price of variation id '.$variation_id
+                                .' of product id '.$product_id.' to '.strval($new_selling_price));
                         }
                     }
                 }
-                var_dump('-------variants end-------');
             }
-            var_dump('------------products end----------');
         }
-        var_dump('----------------------category end------------------------');
     }
-//    var_dump(json_encode($product_categories));
-}
 
-?>
+    echo 'Price updating module finished ';
+}
